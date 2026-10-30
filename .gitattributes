@@ -1,0 +1,11 @@
+# 文字檔統一以 LF 存入版本庫；Windows 取出時依 core.autocrlf 轉換
+* text=auto
+
+# Linux 測試腳本必須維持 LF，否則 bash 會因 \r 失敗
+*.sh   text eol=lf
+# PowerShell 腳本維持 CRLF（並保留 UTF-8 BOM，PowerShell 5.1 才能正確讀取中文）
+*.ps1  text eol=crlf
+
+*.exe  binary
+*.mcpb binary
+*.zip  binary

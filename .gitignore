@@ -1,0 +1,5 @@
+/target
+# 本地設定檔可能含主機資訊，不要提交
+config.toml
+!config.example.toml
+/dist

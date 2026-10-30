@@ -1,0 +1,4 @@
+# 第一次建置前請複製到 .cargo\config.toml（見 README §1.2）
+# Windows MSVC：靜態連結 C runtime，使用者不需要安裝 VC++ Redistributable
+[target.x86_64-pc-windows-msvc]
+rustflags = ["-C", "target-feature=+crt-static"]

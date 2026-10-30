@@ -1,0 +1,11 @@
+{
+  "mcpServers": {
+    "ssh": {
+      "command": "C:\\Tools\\ssh-mcp\\ssh-mcp.exe",
+      "args": [],
+      "env": {
+        "SSH_MCP_LOG": "info"
+      }
+    }
+  }
+}

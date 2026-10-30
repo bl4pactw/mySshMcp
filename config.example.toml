@@ -1,0 +1,80 @@
+# ssh-mcp 設定檔範例
+# 複製到 %APPDATA%\ssh-mcp\config.toml 後修改。
+# 也可用環境變數 SSH_MCP_CONFIG 或命令列 --config 指定其他位置。
+# 修改後需重新啟動 MCP client（例如完全結束再重開 Claude Desktop）。
+
+[general]
+default_timeout_s     = 30        # ssh_exec 預設逾時
+max_timeout_s         = 600       # LLM 可指定的逾時上限
+max_output_bytes      = 32768     # stdout / stderr 各自回傳給 LLM 的上限；超過時完整輸出另存檔案
+known_hosts           = "~/.ssh/known_hosts"
+agent                 = "auto"    # auto（Windows = openssh）/ openssh / pageant
+# agent_pipe          = '\\.\pipe\openssh-ssh-agent'
+# log_dir             = "%APPDATA%\\ssh-mcp\\logs"      # 稽核記錄與 log
+# output_dir          = "%APPDATA%\\ssh-mcp\\outputs"   # 截斷時的完整輸出
+idle_session_ttl_s    = 300       # 閒置連線保留時間
+max_channels_per_host = 4         # 每台主機同時執行的命令數上限
+
+# 所有主機的預設值；[[hosts]] 中有設定的欄位會覆蓋這裡
+[defaults]
+port              = 22
+user              = "builder"
+connect_timeout_s = 10
+keepalive_s       = 30
+# shell_mode      = "posix"       # posix（預設）/ raw
+[defaults.env]                    # 與各主機的 [hosts.env] 合併，同名以主機為準
+LANG = "C.UTF-8"
+
+# ---------------------------------------------------------------------------
+# 主機清單：LLM 只能指定 alias，不能自行指定 host / port / user
+# ---------------------------------------------------------------------------
+
+[[hosts]]
+alias       = "build-01"
+description = "Yocto build server"
+host        = "build-01.lan"
+# port / user 未設定 → 使用 [defaults]
+
+# 每次 ssh_exec 都自動套用：
+cwd         = "/home/builder/poky/build"   # 初始工作目錄（絕對路徑）；之後 cd 會被記住
+pre_command = "source /home/builder/poky/oe-init-build-env /home/builder/poky/build > /dev/null"
+                                            # 失敗時不執行命令並回報錯誤
+                                            # 遠端登入 shell 是 dash 等純 POSIX shell 時，請用 "." 取代 "source"
+[hosts.env]
+BB_NUMBER_THREADS = "8"
+
+[[hosts]]
+alias       = "lab-rpi"
+description = "Lab Raspberry Pi（非標準 port）"
+host        = "192.168.10.50"
+port        = 2222
+user        = "pi"
+
+# 同一台主機、不同帳號 → 不同 alias，權限分開控管
+[[hosts]]
+alias           = "lab-rpi-admin"
+description     = "Lab Raspberry Pi（admin，僅必要時使用）"
+host            = "192.168.10.50"
+port            = 2222
+user            = "admin"
+allow_dangerous = false   # true 且 MCP 設定中有環境變數 SSH_MCP_ALLOW_DANGEROUS=1，才放行黑名單命令
+
+# 登入 shell 不是 POSIX（例如 Windows OpenSSH Server、fish）的主機
+# [[hosts]]
+# alias      = "win-box"
+# host       = "win-box.lan"
+# user       = "Administrator"
+# shell_mode = "raw"      # 命令原樣送出；不支援 cwd 記憶 / env / pre_command
+
+# ---------------------------------------------------------------------------
+# 命令黑名單（只是第二道防線；主要防線是遠端使用低權限帳號）
+# 未設定時使用內建規則（同下）
+# ---------------------------------------------------------------------------
+[guard]
+deny_patterns = [
+  '(^|[;&|\s])rm\s+-[a-zA-Z]*r[a-zA-Z]*f?\s+/(\s|$|\*)',
+  '\bmkfs(\.\w+)?\b',
+  '\bdd\b.*\bof=/dev/',
+  '\b(shutdown|poweroff|halt|reboot)\b',
+  ':\(\)\s*\{\s*:\|:&\s*\};:',
+]

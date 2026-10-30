@@ -1,0 +1,60 @@
+{
+  "manifest_version": "0.3",
+  "name": "ssh-mcp",
+  "display_name": "SSH MCP",
+  "version": "0.1.0",
+  "description": "透過 SSH 在設定檔指定的主機上執行命令並取回結果（個人使用）",
+  "long_description": "以 SSH 在 config.toml 中列出的主機執行 shell 命令。只能連到設定檔中的主機別名；認證一律透過 ssh-agent（Windows OpenSSH Agent 或 Pageant），並嚴格比對 known_hosts。每次執行都是新的 shell，工作目錄會被記住，環境變數由設定檔的 env / pre_command 提供。所有呼叫都寫入稽核記錄。\n\n⚠ 等同把 SSH 權限交給 Claude：遠端請使用低權限帳號，且不要把 ssh_exec 設成自動核准。",
+  "author": {
+    "name": "Brad"
+  },
+  "server": {
+    "type": "binary",
+    "entry_point": "server/ssh-mcp.exe",
+    "mcp_config": {
+      "command": "${__dirname}/server/ssh-mcp.exe",
+      "args": [],
+      "env": {
+        "SSH_MCP_CONFIG": "${user_config.config_path}",
+        "SSH_MCP_ALLOW_DANGEROUS": "${user_config.allow_dangerous}",
+        "SSH_MCP_LOG": "${user_config.log_level}"
+      }
+    }
+  },
+  "tools": [
+    {
+      "name": "ssh_list_hosts",
+      "description": "列出設定檔中可連線的主機（alias、host、port、帳號、目前記住的工作目錄）"
+    },
+    {
+      "name": "ssh_exec",
+      "description": "在指定主機上透過 SSH 執行 shell 命令，回傳 exit_code、stdout、stderr"
+    }
+  ],
+  "keywords": ["ssh", "remote", "shell", "linux", "embedded"],
+  "compatibility": {
+    "platforms": ["win32"]
+  },
+  "user_config": {
+    "config_path": {
+      "type": "file",
+      "title": "設定檔（config.toml）",
+      "description": "留空則使用 %APPDATA%\\ssh-mcp\\config.toml。修改設定檔後需要停用再啟用此擴充功能（或重開 Claude Desktop）。",
+      "required": false
+    },
+    "allow_dangerous": {
+      "type": "boolean",
+      "title": "允許危險命令",
+      "description": "開啟後，設定檔中 allow_dangerous = true 的主機才可以執行黑名單命令（reboot、mkfs 等）。其他主機不受影響。",
+      "default": false,
+      "required": false
+    },
+    "log_level": {
+      "type": "string",
+      "title": "Log 等級",
+      "description": "error / warn / info / debug",
+      "default": "info",
+      "required": false
+    }
+  }
+}
